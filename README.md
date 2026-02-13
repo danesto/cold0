@@ -47,12 +47,12 @@ cp .env.example .env
 | `BETTER_AUTH_SECRET` | Random secret for session signing (min 32 chars) |
 | `BETTER_AUTH_URL` | Your app's base URL (e.g. `http://localhost:5173`) |
 | `ENCRYPTION_KEY` | Random secret for encrypting stored SMTP passwords (min 32 chars) |
-
-These are used for sending verification emails upon registration
 | `SYSTEM_SMTP_HOST` | SMTP host for system emails (verification, password reset) |
 | `SYSTEM_SMTP_PORT` | SMTP port (default: `465`) |
 | `SYSTEM_SMTP_EMAIL` | System sender email address |
 | `SYSTEM_SMTP_PASSWORD` | System SMTP password |
+
+_The `SYSTEM` prefixed ones are used for sending verification emails upon registration_
 
 To generate random secrets:
 
