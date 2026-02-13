@@ -84,6 +84,9 @@ Open [http://localhost:5173](http://localhost:5173).
 
 ## Deployment
 
+When deploying make sure your build script is configured to generate prisma client and run migrations, like so:
+`prisma generate && prisma migrate deploy && vite build`
+
 The app can be deployed anywhere that runs Node.js/Bun — VPS with Coolify, Docker, Vercel, etc.
 
 Make sure to:

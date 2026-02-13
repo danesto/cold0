@@ -1,6 +1,6 @@
 <script lang="ts">
 	import './layout.css';
-	import favicon from '$lib/assets/favicon.svg';
+	import favicon from '$lib/assets/favicon.ico';
 	import UserMenu from '$lib/components/authentication/user-menu.svelte';
 	import { page } from '$app/stores';
 	import { resolve } from '$app/paths';
