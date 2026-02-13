@@ -1,0 +1,211 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String?
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  image         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sessions       Session[]
+  accounts       Account[]
+  lists          List[]
+  emailTemplates EmailTemplate[]
+  smtpSettings   SmtpSettings?
+  role           String?
+  banned         Boolean?        @default(false)
+  banReason      String?
+  banExpires     DateTime?
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  impersonatedBy String?
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?   @db.Text
+  refreshToken          String?   @db.Text
+  idToken               String?   @db.Text
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([identifier, value])
+  @@index([identifier])
+  @@map("verification")
+}
+
+// Cold Email Management Models
+
+model List {
+  id          String   @id @default(cuid())
+  name        String
+  description String?  @db.Text
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contactLists ContactList[]
+
+  @@index([userId])
+  @@map("list")
+}
+
+model Contact {
+  id String @id @default(cuid())
+
+  // Essential contact information
+  email     String
+  firstName String?
+  lastName  String?
+
+  // Company information
+  company     String?
+  jobTitle    String?
+  website     String?
+  phone       String?
+  linkedInUrl String?
+
+  // Company details
+  industry          String?
+  companySize       String? // e.g., "1-10", "11-50", "51-200", "201-500", "501-1000", "1000+"
+  numberOfEmployees Int?
+
+  // Location
+  city    String?
+  country String?
+
+  // Campaign tracking
+  emailSent   Boolean       @default(false)
+  emailSentAt DateTime?
+  status      ContactStatus @default(PROSPECT)
+
+  // Additional info
+  notes String? @db.Text
+
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contactLists ContactList[]
+
+  @@unique([email])
+  @@index([email])
+  @@index([company])
+  @@index([status])
+  @@index([emailSent])
+  @@map("contact")
+}
+
+model ContactList {
+  id        String   @id @default(cuid())
+  contactId String
+  listId    String
+  addedAt   DateTime @default(now())
+
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  list    List    @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+  @@unique([contactId, listId])
+  @@index([contactId])
+  @@index([listId])
+  @@map("contact_list")
+}
+
+model EmailTemplate {
+  id        String   @id @default(cuid())
+  name      String
+  subject   String
+  body      String   @db.Text
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("email_template")
+}
+
+model SmtpSettings {
+  id         String  @id @default(cuid())
+  host       String
+  port       Int     @default(465)
+  secure     Boolean @default(true)
+  email      String
+  password   String // encrypted at application level
+  senderName String?
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("smtp_settings")
+}
+
+enum ContactStatus {
+  PROSPECT // Not contacted yet
+  CONTACTED // Email sent
+  OPENED // Email opened (if tracking)
+  REPLIED // Replied to email
+  INTERESTED // Showed interest
+  NOT_INTERESTED // Not interested
+  BOUNCED // Email bounced
+  UNSUBSCRIBED // Unsubscribed from emails
+}
