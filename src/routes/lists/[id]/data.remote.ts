@@ -24,6 +24,11 @@ export const getListWithContacts = query('unchecked', async ({ listId }: { listI
 		},
 		include: {
 			contactLists: {
+				where: {
+					contact: {
+						userId: user.id // Only include contacts owned by this user
+					}
+				},
 				include: {
 					contact: true
 				},
