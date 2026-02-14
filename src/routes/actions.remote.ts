@@ -149,12 +149,20 @@ export const saveContactsToList = command(
 					notes: row.notes as string | undefined
 				};
 
-				// Upsert contact (create or update if exists)
+				// Upsert contact scoped to the current user (create or update if exists)
 				const contact = await prisma.contact.upsert({
-					where: { email: contactData.email },
-					create: contactData,
+					where: {
+						email_userId: {
+							email: contactData.email,
+							userId: user.id
+						}
+					},
+					create: {
+						...contactData,
+						userId: user.id
+					},
 					update: {
-						// Update fields if contact already exists
+						// Update fields if contact already exists for this user
 						...contactData,
 						updatedAt: new Date()
 					}

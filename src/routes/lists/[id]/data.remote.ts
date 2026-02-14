@@ -82,6 +82,15 @@ export const updateContactNotes = command(
 			throw new Error('You must be logged in');
 		}
 
+		// Verify the contact belongs to the user
+		const contact = await prisma.contact.findFirst({
+			where: { id: contactId, userId: user.id }
+		});
+
+		if (!contact) {
+			throw new Error('Contact not found or you do not have access to it');
+		}
+
 		await prisma.contact.update({
 			where: { id: contactId },
 			data: { notes }
@@ -102,6 +111,15 @@ export const updateContactEmailSent = command(
 
 		if (!user) {
 			throw new Error('You must be logged in');
+		}
+
+		// Verify the contact belongs to the user
+		const contact = await prisma.contact.findFirst({
+			where: { id: contactId, userId: user.id }
+		});
+
+		if (!contact) {
+			throw new Error('Contact not found or you do not have access to it');
 		}
 
 		await prisma.contact.update({
@@ -163,13 +181,18 @@ export const addContactToList = command(
 			throw new Error('List not found or you do not have access to it');
 		}
 
-		// Check if contact with this email already exists
+		// Check if contact with this email already exists for this user
 		let contact = await prisma.contact.findUnique({
-			where: { email: contactData.email }
+			where: {
+				email_userId: {
+					email: contactData.email,
+					userId: user.id
+				}
+			}
 		});
 
 		if (contact) {
-			// Contact exists, just link it to the list if not already linked
+			// Contact exists for this user, just link it to the list if not already linked
 			const existingLink = await prisma.contactList.findUnique({
 				where: {
 					contactId_listId: {
@@ -191,7 +214,7 @@ export const addContactToList = command(
 				}
 			});
 		} else {
-			// Create new contact
+			// Create new contact owned by this user
 			// Convert numberOfEmployees to number if it's a string
 			const numEmployees = contactData.numberOfEmployees
 				? Number(contactData.numberOfEmployees)
@@ -199,6 +222,7 @@ export const addContactToList = command(
 
 			contact = await prisma.contact.create({
 				data: {
+					userId: user.id,
 					email: contactData.email,
 					firstName: contactData.firstName || null,
 					lastName: contactData.lastName || null,
@@ -274,10 +298,11 @@ export const bulkSendEmails = command(
 			throw new Error('Template not found or you do not have access to it');
 		}
 
-		// Fetch the contacts
+		// Fetch the contacts (only ones belonging to this user)
 		const contacts = await prisma.contact.findMany({
 			where: {
-				id: { in: contactIds }
+				id: { in: contactIds },
+				userId: user.id
 			}
 		});
 
